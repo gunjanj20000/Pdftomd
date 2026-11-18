@@ -1,0 +1,23 @@
+{
+  "name": "pdf-book-to-markdown-studio-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-grade PDF textbook & technical book to Markdown conversion studio",
+  "scripts": {
+    "install:all": "./scripts/install.sh",
+    "build:frontend": "cd frontend && npm run build",
+    "start": "./scripts/start.sh",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "PYTHONPATH=backend python3 backend/run.py",
+    "test:backend": "PYTHONPATH=backend python3 -m pytest backend/tests -v"
+  },
+  "keywords": [
+    "pdf",
+    "markdown",
+    "pymupdf4llm",
+    "document-processing",
+    "textbook-converter"
+  ],
+  "author": "Antigravity DeepMind Team",
+  "license": "MIT"
+}
