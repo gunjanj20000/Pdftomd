@@ -64,6 +64,17 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
   // Selected for batch merge/delete
   const selectedChapters = chapters.filter((c) => c.is_selected);
   const [convertingRowId, setConvertingRowId] = useState<string | null>(null);
+  const [isStartingConversion, setIsStartingConversion] = useState<boolean>(false);
+
+  const handleStartConversionClick = async () => {
+    if (isStartingConversion || selectedChapters.length === 0) return;
+    setIsStartingConversion(true);
+    try {
+      await onStartConversion();
+    } finally {
+      setIsStartingConversion(false);
+    }
+  };
 
   const handleConvertSingleRow = async (c: Chapter) => {
     setConvertingRowId(c.id);
@@ -222,12 +233,12 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
             <span>Add Chapter</span>
           </button>
           <button
-            onClick={onStartConversion}
-            disabled={selectedChapters.length === 0}
+            onClick={handleStartConversionClick}
+            disabled={selectedChapters.length === 0 || isStartingConversion}
             className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 text-white shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
           >
-            <Play className="w-4 h-4 fill-white" />
-            <span>Convert {selectedChapters.length} Chapters</span>
+            <Play className={`w-4 h-4 fill-white ${isStartingConversion ? 'animate-pulse' : ''}`} />
+            <span>{isStartingConversion ? 'Starting...' : `Convert ${selectedChapters.length} Chapters`}</span>
           </button>
         </div>
       </div>

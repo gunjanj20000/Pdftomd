@@ -29,6 +29,35 @@ async def start_conversion(project_id: str):
         conn.close()
         raise HTTPException(status_code=400, detail="No chapters are selected for conversion.")
 
+    # Guard: check if an active job is already executing for this project
+    existing = conn.execute(
+        """
+        SELECT * FROM conversion_jobs 
+        WHERE project_id = ? AND status IN ('running', 'queued')
+        ORDER BY created_at DESC LIMIT 1
+        """,
+        (project_id,),
+    ).fetchone()
+
+    if existing:
+        conn.close()
+        return ConversionJobResponse(
+            id=existing["id"],
+            project_id=existing["project_id"],
+            status=existing["status"],
+            total_chapters=existing["total_chapters"],
+            completed_chapters=existing["completed_chapters"],
+            current_chapter_id=existing["current_chapter_id"],
+            current_chapter_title=existing["current_chapter_title"],
+            current_page=existing["current_page"] or 0,
+            progress_percent=existing["progress_percent"] or 0.0,
+            current_stage=existing["current_stage"] or "Queued",
+            speed_pages_per_sec=existing["speed_pages_per_sec"] or 0.0,
+            eta_seconds=existing["eta_seconds"] or 0,
+            created_at=existing["created_at"],
+            started_at=existing["started_at"],
+        )
+
     job_id = f"job_{uuid.uuid4().hex[:12]}"
     now = utcnow_str()
 

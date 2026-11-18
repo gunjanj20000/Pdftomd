@@ -27,9 +27,11 @@ def convert_chapter_to_markdown(
     project_output_dir: Path,
     settings: Optional[ConversionSettingsModel] = None,
     progress_callback: Optional[Callable[[str, int, str], None]] = None,
+    should_abort: Optional[Callable[[], bool]] = None,
 ) -> Dict[str, Any]:
     """
     Converts a single chapter's page range from a PDF into Markdown using PyMuPDF4LLM.
+    Uses chunked page extraction for smooth progress telemetry and low memory footprint.
     Writes output markdown to project_output_dir/chapters/ and images to project_output_dir/images/.
     """
     if settings is None:
@@ -65,6 +67,7 @@ def convert_chapter_to_markdown(
     start_idx = max(0, start_page - 1)
     end_idx = min(total_doc_pages - 1, end_page - 1)
     pages_to_convert = list(range(start_idx, end_idx + 1))
+    total_chapter_pages = len(pages_to_convert)
 
     if not pages_to_convert:
         doc.close()
@@ -74,33 +77,70 @@ def convert_chapter_to_markdown(
         progress_callback(
             "Analyzing pages",
             start_page,
-            f"Converting {len(pages_to_convert)} pages (p. {start_page} to {end_page})",
+            f"Converting {total_chapter_pages} pages (p. {start_page} to {end_page})",
         )
 
     # PyMuPDF4LLM options
     write_images = bool(settings.extract_images)
     table_format = "html" if settings.table_format == "html" else "markdown"
-    
-    # Execute PyMuPDF4LLM conversion
+    use_ocr = bool(settings.enable_ocr)
+
+    # Chunked page processing: 1 page if OCR is active, up to 3 pages for fast digital text extraction
+    chunk_size = 1 if use_ocr else max(1, min(settings.batch_size or 2, 3))
+    raw_md_chunks: List[str] = []
+
+    # Execute chunked PyMuPDF4LLM conversion
     try:
-        if progress_callback:
-            progress_callback("Extracting text", start_page, "Running PyMuPDF4LLM layout extraction...")
+        for chunk_offset in range(0, total_chapter_pages, chunk_size):
+            if should_abort and should_abort():
+                raise InterruptedError(f"Conversion of Chapter {chapter_num} cancelled by user.")
 
-        raw_md = pymupdf4llm.to_markdown(
-            doc,
-            pages=pages_to_convert,
-            write_images=write_images,
-            image_path=str(images_dir) if write_images else "",
-            image_format=settings.image_format,
-            table_output=table_format,
-            page_separators=settings.include_page_numbers,
-            header=not settings.remove_repeated_headers,
-            footer=not settings.remove_repeated_footers,
-        )
+            chunk_page_indices = pages_to_convert[chunk_offset : chunk_offset + chunk_size]
+            first_p = chunk_page_indices[0] + 1
+            last_p = chunk_page_indices[-1] + 1
+            done_in_ch = min(chunk_offset + len(chunk_page_indices), total_chapter_pages)
 
+            if progress_callback:
+                p_label = f"p. {first_p}" if first_p == last_p else f"pp. {first_p}–{last_p}"
+                progress_callback(
+                    "Extracting text",
+                    first_p,
+                    f"Converting {p_label} of {end_page} ({done_in_ch}/{total_chapter_pages} pages in Ch. {chapter_num})...",
+                )
+
+            try:
+                chunk_md = pymupdf4llm.to_markdown(
+                    doc,
+                    pages=chunk_page_indices,
+                    write_images=write_images,
+                    image_path=str(images_dir) if write_images else "",
+                    image_format=settings.image_format,
+                    table_output=table_format,
+                    page_separators=settings.include_page_numbers,
+                    header=not settings.remove_repeated_headers,
+                    footer=not settings.remove_repeated_footers,
+                    use_ocr=use_ocr,
+                )
+                if chunk_md:
+                    raw_md_chunks.append(chunk_md)
+            except Exception as chunk_err:
+                logger.warning(
+                    f"PyMuPDF4LLM chunk error on pages {chunk_page_indices}: {chunk_err}. Falling back to standard extraction for chunk."
+                )
+                fallback_chunk_md = _fallback_chapter_to_markdown(
+                    doc, chunk_page_indices, images_dir if write_images else None
+                )
+                if fallback_chunk_md:
+                    raw_md_chunks.append(fallback_chunk_md)
+
+        raw_md = "\n\n".join(chunk.strip() for chunk in raw_md_chunks if chunk.strip())
+        if not raw_md:
+            raw_md = _fallback_chapter_to_markdown(doc, pages_to_convert, images_dir if write_images else None)
+
+    except InterruptedError:
+        raise
     except Exception as e:
         logger.warning(f"PyMuPDF4LLM layout conversion failed with: {e}. Falling back to standard extraction.")
-        # Fallback to standard PyMuPDF text & image extraction
         raw_md = _fallback_chapter_to_markdown(doc, pages_to_convert, images_dir if write_images else None)
     finally:
         doc.close()

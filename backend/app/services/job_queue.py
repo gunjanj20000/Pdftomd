@@ -246,8 +246,14 @@ class JobQueueManager:
             conn.close()
 
             total_selected = len(chapters)
-            # Count already completed chapters (for resuming!)
+            # Count already completed chapters and pages (for resuming!)
             completed_count = sum(1 for c in chapters if c["status"] == "completed")
+            total_pages_all_selected = sum(max(1, (c["end_page"] - c["start_page"] + 1)) for c in chapters)
+            completed_pages_total = sum(
+                max(1, (c["end_page"] - c["start_page"] + 1))
+                for c in chapters
+                if c["status"] == "completed" and c["markdown_path"] and Path(c["markdown_path"]).exists()
+            )
 
             conn = get_db()
             with conn:
@@ -301,12 +307,35 @@ class JobQueueManager:
                     )
                 conn.close()
 
+                # Chapter start broadcast
+                self.broadcast_sync(
+                    "job_progress",
+                    {
+                        "job_id": job_id,
+                        "project_id": project_id,
+                        "chapter_id": chapter_id,
+                        "current_chapter_title": ch_title,
+                        "current_page": start_p,
+                        "current_stage": "Reading PDF",
+                        "speed_pages_per_sec": 0.0,
+                        "progress_percent": round((completed_pages_total / max(1, total_pages_all_selected)) * 100, 1),
+                        "eta_seconds": 0,
+                        "completed_chapters": completed_count,
+                        "total_chapters": total_selected,
+                    },
+                )
+
                 # Progress callback
                 def on_progress(stage: str, page_num: int, msg: str):
+                    pages_done_in_ch = max(0, page_num - start_p + 1)
+                    current_total_done_pages = min(
+                        total_pages_all_selected,
+                        completed_pages_total + pages_done_in_ch
+                    )
                     elapsed = max(0.1, time.time() - start_time)
-                    speed = round(total_pages_processed / elapsed, 2)
-                    percent = round((completed_count / max(1, total_selected)) * 100, 1)
-                    rem_pages = max(0, (total_selected - completed_count) * pages_in_ch)
+                    speed = round(current_total_done_pages / elapsed, 1)
+                    percent = round((current_total_done_pages / max(1, total_pages_all_selected)) * 100, 1)
+                    rem_pages = max(0, total_pages_all_selected - current_total_done_pages)
                     eta = int(rem_pages / max(0.1, speed)) if speed > 0 else 0
 
                     conn = get_db()
@@ -321,6 +350,24 @@ class JobQueueManager:
                         )
                     conn.close()
 
+                    # Broadcast real-time job_progress for the UI progress cards and speedometers
+                    self.broadcast_sync(
+                        "job_progress",
+                        {
+                            "job_id": job_id,
+                            "project_id": project_id,
+                            "chapter_id": chapter_id,
+                            "current_chapter_title": ch_title,
+                            "current_page": page_num,
+                            "current_stage": stage,
+                            "speed_pages_per_sec": speed,
+                            "progress_percent": percent,
+                            "eta_seconds": eta,
+                            "completed_chapters": completed_count,
+                            "total_chapters": total_selected,
+                        },
+                    )
+
                     self.log(job_id, project_id, msg, stage=stage, chapter_id=chapter_id)
 
                 try:
@@ -331,10 +378,11 @@ class JobQueueManager:
                         project_output_dir=output_dir,
                         settings=settings,
                         progress_callback=on_progress,
+                        should_abort=lambda: bool(self.cancel_flags.get(job_id) or self.pause_flags.get(job_id)),
                     )
 
                     completed_count += 1
-                    total_pages_processed += pages_in_ch
+                    completed_pages_total += pages_in_ch
 
                     # Update chapter row
                     conn = get_db()
@@ -354,7 +402,7 @@ class JobQueueManager:
                             ),
                         )
                         # Update job progress
-                        percent = round((completed_count / max(1, total_selected)) * 100, 1)
+                        percent = round((completed_pages_total / max(1, total_pages_all_selected)) * 100, 1)
                         conn.execute(
                             """
                             UPDATE conversion_jobs 
@@ -377,6 +425,12 @@ class JobQueueManager:
                         },
                     )
 
+                except InterruptedError:
+                    if self.cancel_flags.get(job_id):
+                        self.log(job_id, project_id, f"Conversion of Chapter {ch_num} cancelled by user.", level="WARNING")
+                    elif self.pause_flags.get(job_id):
+                        self.log(job_id, project_id, f"Conversion of Chapter {ch_num} paused by user.", level="INFO")
+                    return
                 except Exception as ch_err:
                     err_msg = str(ch_err)
                     logger.error(f"Error converting chapter {ch_num}: {err_msg}\n{traceback.format_exc()}")

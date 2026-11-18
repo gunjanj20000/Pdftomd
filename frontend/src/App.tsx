@@ -138,6 +138,23 @@ export const App: React.FC = () => {
             const msg = JSON.parse(event.data);
             if (msg.event === 'log') {
               setLogs((prev) => [msg.data, ...prev.slice(0, 300)]);
+            } else if (msg.event === 'job_progress') {
+              setActiveJob((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  status: 'running',
+                  current_chapter_id: msg.data.chapter_id || prev.current_chapter_id,
+                  current_chapter_title: msg.data.current_chapter_title || prev.current_chapter_title,
+                  current_page: msg.data.current_page || prev.current_page,
+                  current_stage: msg.data.current_stage || prev.current_stage,
+                  speed_pages_per_sec: msg.data.speed_pages_per_sec ?? prev.speed_pages_per_sec,
+                  progress_percent: msg.data.progress_percent ?? prev.progress_percent,
+                  eta_seconds: msg.data.eta_seconds ?? prev.eta_seconds,
+                  completed_chapters: msg.data.completed_chapters ?? prev.completed_chapters,
+                  total_chapters: msg.data.total_chapters ?? prev.total_chapters,
+                };
+              });
             } else if (msg.event === 'chapter_completed') {
               if (activeProject) refreshChapters(activeProject.id);
               refreshJobs();
@@ -172,6 +189,29 @@ export const App: React.FC = () => {
       clearTimeout(reconnectTimeout);
     };
   }, [activeProject]);
+
+  // Polling fallback when a job is active to guarantee UI updates
+  useEffect(() => {
+    if (!activeJob || (activeJob.status !== 'running' && activeJob.status !== 'queued')) {
+      return;
+    }
+    const interval = setInterval(async () => {
+      try {
+        const freshJob = await api.getJob(activeJob.id);
+        setActiveJob(freshJob);
+        if (
+          freshJob.status === 'completed' ||
+          freshJob.status === 'completed_with_errors' ||
+          freshJob.status === 'failed'
+        ) {
+          refreshProjects();
+          refreshStats();
+          if (activeProject) refreshChapters(activeProject.id);
+        }
+      } catch (_) {}
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [activeJob?.id, activeJob?.status, activeProject]);
 
   // Actions
   const handleSelectProject = (project: Project, tab: NavTab = 'chapters') => {

@@ -340,122 +340,6 @@ def split_project_chapter(project_id: str, payload: ChapterSplitRequest, chapter
     return get_chapters(project_id)
 
 
-@router.post("/{chapter_id}/reconvert", response_model=ChapterResponse)
-def reconvert_single_chapter(
-    project_id: str,
-    chapter_id: str,
-    custom_settings: Optional[ConversionSettingsModel] = None,
-):
-    """
-    Selectively reconverts ONLY this single chapter with optional overridden settings
-    (e.g. table_format="html", enable_ocr=True, etc.), leaving all other chapters untouched.
-    """
-    conn = get_db()
-    proj = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
-    if not proj:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    ch = conn.execute(
-        "SELECT * FROM chapters WHERE id = ? AND project_id = ?", (chapter_id, project_id)
-    ).fetchone()
-    if not ch:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Chapter not found")
-
-    settings_row = conn.execute(
-        "SELECT * FROM conversion_settings WHERE project_id = ?", (project_id,)
-    ).fetchone()
-    conn.close()
-
-    # Use custom settings if provided, else project defaults
-    if custom_settings:
-        settings = custom_settings
-    elif settings_row:
-        settings = ConversionSettingsModel(
-            preserve_headings=bool(settings_row["preserve_headings"]),
-            preserve_tables=bool(settings_row["preserve_tables"]),
-            table_format=settings_row["table_format"],
-            extract_images=bool(settings_row["extract_images"]),
-            image_format=settings_row["image_format"],
-            min_image_dimension=settings_row["min_image_dimension"],
-            image_quality=settings_row["image_quality"],
-            include_page_numbers=bool(settings_row["include_page_numbers"]),
-            remove_repeated_headers=bool(settings_row["remove_repeated_headers"]),
-            remove_repeated_footers=bool(settings_row["remove_repeated_footers"]),
-            enable_ocr=bool(settings_row["enable_ocr"]),
-            ocr_language=settings_row["ocr_language"],
-            batch_size=settings_row["batch_size"],
-            output_format=settings_row["output_format"],
-        )
-    else:
-        settings = ConversionSettingsModel()
-
-    from app.services.converter import convert_chapter_to_markdown
-
-    pdf_path = Path(proj["filepath"])
-    output_dir = Path(proj["output_dir"])
-
-    try:
-        res = convert_chapter_to_markdown(
-            pdf_path=pdf_path,
-            chapter=dict(ch),
-            project_output_dir=output_dir,
-            settings=settings,
-        )
-    except Exception as e:
-        logger.error(f"Selective reconversion error: {e}")
-        raise HTTPException(status_code=500, detail=f"Selective reconversion failed: {str(e)}")
-
-    now = utcnow_str()
-    conn = get_db()
-    with conn:
-        conn.execute(
-            """
-            UPDATE chapters 
-            SET status = 'completed', markdown_path = ?, markdown_size = ?, image_count = ?,
-                error_message = NULL, updated_at = ?
-            WHERE id = ?
-            """,
-            (res["filepath"], res["filesize"], res["image_count"], now, chapter_id),
-        )
-    
-    updated_ch = conn.execute("SELECT * FROM chapters WHERE id = ?", (chapter_id,)).fetchone()
-    conn.close()
-
-    return ChapterResponse(
-        id=updated_ch["id"],
-        project_id=updated_ch["project_id"],
-        chapter_num=updated_ch["chapter_num"],
-        title=updated_ch["title"],
-        start_page=updated_ch["start_page"],
-        end_page=updated_ch["end_page"],
-        page_count=updated_ch["page_count"],
-        level=updated_ch["level"],
-        detection_method=updated_ch["detection_method"],
-        status=updated_ch["status"],
-        is_selected=bool(updated_ch["is_selected"]),
-        markdown_path=updated_ch["markdown_path"],
-        markdown_size=updated_ch["markdown_size"],
-        image_count=updated_ch["image_count"],
-        error_message=updated_ch["error_message"],
-        created_at=updated_ch["created_at"],
-        updated_at=updated_ch["updated_at"],
-    )
-
-
-@router.post("/reconvert-batch", response_model=List[ChapterResponse])
-def reconvert_batch_chapters(
-    project_id: str,
-    chapter_ids: List[str],
-    custom_settings: Optional[ConversionSettingsModel] = None,
-):
-    """Selectively reconverts a specified list of chapters."""
-    results = []
-    for cid in chapter_ids:
-        res = reconvert_single_chapter(project_id, cid, custom_settings)
-        results.append(res)
-    return results
 
 
 
@@ -508,6 +392,8 @@ def merge_project_chapters(project_id: str, payload: ChapterMergeRequest):
     return get_chapters(project_id)
 
 
+
+
 @router.post("/{chapter_id}/reconvert", response_model=ChapterResponse)
 def reconvert_single_chapter(
     project_id: str,
@@ -624,4 +510,3 @@ def reconvert_batch_chapters(
         res = reconvert_single_chapter(project_id, cid, custom_settings)
         results.append(res)
     return results
-
