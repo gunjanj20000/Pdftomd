@@ -74,22 +74,28 @@ Unlike simple PDF-to-text converters, the Studio is an end-to-end publishing wor
 
 ### Option 1: Automated Script (Recommended)
 
+Running the installer automatically sets up backend and frontend dependencies and creates a desktop shortcut (**PDF to MD Studio**) with custom icons on your desktop for 1-click startup!
+
 #### Linux (Ubuntu / Debian / Fedora / Arch)
 ```bash
 git clone https://github.com/example/pdf-book-to-markdown-studio.git
 cd pdf-book-to-markdown-studio
 ./scripts/install.sh
-./scripts/start.sh
 ```
-Open **`http://localhost:8000`** in your browser.
+*Creates a desktop launcher on `~/Desktop/pdf-to-md-studio.desktop` and registers it in your system Applications menu.*
 
 #### Windows
 1. Double-click `scripts\install.bat` (or run in Command Prompt).
-2. Double-click `scripts\start.bat` to launch.
+*Creates a `PDF to MD Studio.lnk` shortcut directly on your Windows Desktop.*
+2. Double-click the Desktop icon or `scripts\start.bat` to launch.
 
 #### macOS
 1. Double-click `scripts/install.command`.
-2. Double-click `scripts/start.command`.
+*Creates a `PDF to MD Studio.command` shortcut on your Desktop.*
+2. Double-click the Desktop shortcut or `scripts/start.command`.
+
+*(You can also recreate or update desktop shortcuts anytime by running: `python3 scripts/create_desktop_shortcut.py`)*
+
 
 ---
 

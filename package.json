@@ -5,6 +5,7 @@
   "description": "Production-grade PDF textbook & technical book to Markdown conversion studio",
   "scripts": {
     "install:all": "./scripts/install.sh",
+    "shortcut": "python3 scripts/create_desktop_shortcut.py",
     "build:frontend": "cd frontend && npm run build",
     "start": "./scripts/start.sh",
     "dev:frontend": "cd frontend && npm run dev",

@@ -35,6 +35,11 @@ cd "$DIR"
 
 mkdir -p data/uploads data/outputs data/temp
 
+echo "--> Creating Desktop shortcut..."
+python3 scripts/create_desktop_shortcut.py || true
+
 echo "=========================================================="
-echo "✓ Installation complete! Run start.command to launch."
+echo "✓ Installation complete!"
+echo "A shortcut 'PDF to MD Studio' has been placed on your Desktop."
+echo "Double-click the desktop shortcut or run start.command to launch."
 echo "=========================================================="

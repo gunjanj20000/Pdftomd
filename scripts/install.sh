@@ -70,9 +70,15 @@ cd "${ROOT_DIR}"
 # 6. Ensure runtime directories
 mkdir -p data/uploads data/outputs data/temp
 
+# 7. Create Desktop Shortcut
+echo ""
+echo "--> Creating Desktop shortcut..."
+python3 scripts/create_desktop_shortcut.py || true
+
 echo ""
 echo "=========================================================="
 echo "✓ Installation completed successfully!"
-echo "To start the application, run:"
+echo "A shortcut has been created on your Desktop: 'PDF to MD Studio'"
+echo "To start the application, double-click the Desktop icon or run:"
 echo "  ./scripts/start.sh"
 echo "=========================================================="

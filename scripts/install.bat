@@ -44,8 +44,12 @@ if not exist "data\uploads" mkdir data\uploads
 if not exist "data\outputs" mkdir data\outputs
 if not exist "data\temp" mkdir data\temp
 
+echo --> Creating Desktop shortcut...
+python scripts\create_desktop_shortcut.py
+
 echo ==========================================================
 echo [SUCCESS] Installation complete!
-echo Run start.bat to launch PDF Book to Markdown Studio.
+echo A shortcut 'PDF to MD Studio' has been placed on your Desktop.
+echo You can double-click the Desktop icon or run start.bat to launch.
 echo ==========================================================
 pause

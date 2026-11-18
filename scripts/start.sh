@@ -20,4 +20,7 @@ export PORT="${PORT:-8000}"
 echo "Backend & Frontend running at: http://localhost:${PORT}"
 echo "Press Ctrl+C to stop."
 
+# Automatically open default web browser
+(sleep 1.2 && (xdg-open "http://localhost:${PORT}" 2>/dev/null || sensible-browser "http://localhost:${PORT}" 2>/dev/null || true)) &
+
 python3 backend/run.py
