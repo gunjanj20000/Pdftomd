@@ -193,3 +193,98 @@ def create_export_zip(
                 zipf.write(file_full, arcname)
 
     return zip_path
+
+
+def extract_chapter_pdf(
+    pdf_path: Path,
+    start_page: int,
+    end_page: int,
+    output_path: Path,
+    title: str = "",
+) -> Path:
+    """
+    Extracts a page range (1-indexed start_page to end_page inclusive) from a source PDF
+    into a standalone, high-fidelity PDF without any quality degradation.
+    """
+    import pymupdf
+
+    doc = pymupdf.open(str(pdf_path))
+    new_doc = pymupdf.open()
+
+    total_pages = len(doc)
+    start_idx = max(0, min(start_page - 1, total_pages - 1))
+    end_idx = max(start_idx, min(end_page - 1, total_pages - 1))
+
+    new_doc.insert_pdf(doc, from_page=start_idx, to_page=end_idx)
+
+    if title:
+        meta = new_doc.metadata or {}
+        meta["title"] = title
+        new_doc.set_metadata(meta)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    new_doc.save(str(output_path), garbage=4, deflate=True)
+    new_doc.close()
+    doc.close()
+
+    return output_path
+
+
+def create_chapters_pdf_zip(
+    project: Dict[str, Any],
+    chapters: List[Dict[str, Any]],
+    output_dir: Path,
+) -> Path:
+    """
+    Slices all chapters in a project into individual standalone PDF files
+    and bundles them into a clean ZIP archive.
+    """
+    import pymupdf
+
+    pdf_path = Path(project["filepath"])
+    if not pdf_path.exists():
+        raise FileNotFoundError(f"Source PDF file not found at {pdf_path}")
+
+    book_name = project.get("title", "Book").replace("/", "-").strip()
+    safe_book_name = "".join(c for c in book_name if c.isalnum() or c in (" ", "-", "_")).strip() or "Book"
+
+    pdf_chapters_dir = output_dir / "pdf_chapters"
+    pdf_chapters_dir.mkdir(parents=True, exist_ok=True)
+
+    extracted_files = []
+    doc = pymupdf.open(str(pdf_path))
+    total_pages = len(doc)
+
+    for ch in chapters:
+        ch_num = ch["chapter_num"]
+        ch_title = ch.get("title", f"Chapter {ch_num}")
+        safe_title = "".join(c for c in ch_title if c.isalnum() or c in (" ", "-", "_")).strip()
+        safe_title = safe_title[:50].strip() or f"Chapter_{ch_num}"
+
+        pdf_filename = f"{ch_num:02d}_{safe_title}.pdf"
+        ch_pdf_path = pdf_chapters_dir / pdf_filename
+
+        start_p = ch["start_page"]
+        end_p = ch["end_page"]
+        start_idx = max(0, min(start_p - 1, total_pages - 1))
+        end_idx = max(start_idx, min(end_p - 1, total_pages - 1))
+
+        new_doc = pymupdf.open()
+        new_doc.insert_pdf(doc, from_page=start_idx, to_page=end_idx)
+        meta = new_doc.metadata or {}
+        meta["title"] = ch_title
+        new_doc.set_metadata(meta)
+        new_doc.save(str(ch_pdf_path), garbage=4, deflate=True)
+        new_doc.close()
+
+        extracted_files.append((ch_pdf_path, pdf_filename))
+
+    doc.close()
+
+    zip_path = output_dir / f"{safe_book_name}_PDF_Chapters.zip"
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for file_path, arcname in extracted_files:
+            zipf.write(file_path, arcname=os.path.join(f"{safe_book_name}_PDF_Chapters", arcname))
+
+    return zip_path
+

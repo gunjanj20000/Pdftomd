@@ -77,3 +77,22 @@ def test_upload_and_workflow(tmp_path):
     ocr_res = client.get("/api/settings/ocr-info")
     assert ocr_res.status_code == 200
     assert "ocr_available" in ocr_res.json()
+
+    # 9. Test Saving Chapters as PDF (individual chapter PDF)
+    chapter_1 = chapters[0]
+    ch_pdf_res = client.get(f"/api/projects/{project_id}/export/chapter/{chapter_1['id']}/pdf")
+    assert ch_pdf_res.status_code == 200
+    assert ch_pdf_res.headers["content-type"] == "application/pdf"
+    assert len(ch_pdf_res.content) > 0
+
+    # Test shortcut endpoint on chapters router
+    ch_pdf_shortcut = client.get(f"/api/projects/{project_id}/chapters/{chapter_1['id']}/pdf")
+    assert ch_pdf_shortcut.status_code == 200
+    assert ch_pdf_shortcut.headers["content-type"] == "application/pdf"
+
+    # 10. Test Saving All Chapters as PDF ZIP
+    zip_pdf_res = client.get(f"/api/projects/{project_id}/export/chapters-pdf-zip")
+    assert zip_pdf_res.status_code == 200
+    assert zip_pdf_res.headers["content-type"] == "application/zip"
+    assert len(zip_pdf_res.content) > 0
+

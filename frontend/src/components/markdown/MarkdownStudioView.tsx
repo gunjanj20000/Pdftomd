@@ -7,6 +7,7 @@ import {
   Save,
   Copy,
   Download,
+  FileDown,
   Search,
   Check,
   ChevronLeft,
@@ -413,6 +414,18 @@ export const MarkdownStudioView: React.FC<MarkdownStudioViewProps> = ({
             {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
           </button>
 
+          {selectedChapterId && (
+            <a
+              href={api.getChapterPdfUrl(project.id, selectedChapterId)}
+              download
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-xs font-medium transition-colors cursor-pointer"
+              title="Save this chapter as sliced PDF"
+            >
+              <FileDown className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">Save PDF</span>
+            </a>
+          )}
+
           <button
             onClick={handleDownload}
             className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium"
@@ -424,7 +437,7 @@ export const MarkdownStudioView: React.FC<MarkdownStudioViewProps> = ({
       </div>
 
       {/* Main Studio Viewport */}
-      <div className="bg-[#111827] border border-slate-800 rounded-2xl overflow-hidden shadow-sm h-[680px] flex">
+      <div className="bg-[#0E131F]/90 border border-slate-800/70 rounded-2xl overflow-hidden shadow-sm h-[680px] flex">
         {/* Source Editor Panel */}
         {(viewMode === 'source' || viewMode === 'split') && (
           <div

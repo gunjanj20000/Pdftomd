@@ -326,7 +326,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0B0F19] text-slate-100 font-sans">
+    <div className="flex min-h-screen bg-[#070A10] text-slate-100 font-sans">
       {/* Desktop Sidebar */}
       <Sidebar
         activeTab={activeTab}
@@ -357,7 +357,7 @@ export const App: React.FC = () => {
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">
           {activeTab === 'dashboard' && (
             <DashboardView
               stats={stats}
@@ -393,16 +393,16 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'chapters' && !activeProject && (
-            <div className="bg-[#111827] border border-slate-800 rounded-2xl p-12 text-center">
-              <h3 className="text-base font-bold text-white">No Active Book Selected</h3>
+            <div className="bg-[#0E131F]/90 border border-slate-800/70 rounded-2xl p-12 text-center max-w-lg mx-auto mt-10">
+              <h3 className="text-sm font-semibold text-white">No Document Selected</h3>
               <p className="text-xs text-slate-400 mt-1">
-                Please upload a PDF book or select one from My Library to review chapters.
+                Upload a PDF book or select one from your library to review chapters and save sliced PDFs.
               </p>
               <button
                 onClick={() => setActiveTab('upload')}
-                className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white"
+                className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer"
               >
-                Upload PDF Book
+                Upload PDF Document
               </button>
             </div>
           )}
@@ -424,10 +424,10 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'markdown' && !activeProject && (
-            <div className="bg-[#111827] border border-slate-800 rounded-2xl p-12 text-center">
-              <h3 className="text-base font-bold text-white">No Active Book Selected</h3>
+            <div className="bg-[#0E131F]/90 border border-slate-800/70 rounded-2xl p-12 text-center max-w-lg mx-auto mt-10">
+              <h3 className="text-sm font-semibold text-white">No Document Selected</h3>
               <p className="text-xs text-slate-400 mt-1">
-                Select a book with converted chapters from My Library to open the Markdown Studio.
+                Select a document with converted chapters from your library to open the Markdown Studio.
               </p>
             </div>
           )}
@@ -442,10 +442,10 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'audit' && !activeProject && (
-            <div className="bg-[#111827] border border-slate-800 rounded-2xl p-12 text-center">
-              <h3 className="text-base font-bold text-white">No Active Book Selected</h3>
+            <div className="bg-[#0E131F]/90 border border-slate-800/70 rounded-2xl p-12 text-center max-w-lg mx-auto mt-10">
+              <h3 className="text-sm font-semibold text-white">No Document Selected</h3>
               <p className="text-xs text-slate-400 mt-1">
-                Select a converted book from My Library to run Document Quality & Health Diagnostics.
+                Select a converted document from your library to run Document Quality & Health Diagnostics.
               </p>
             </div>
           )}
@@ -455,10 +455,10 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'export' && !activeProject && (
-            <div className="bg-[#111827] border border-slate-800 rounded-2xl p-12 text-center">
-              <h3 className="text-base font-bold text-white">No Active Book Selected</h3>
+            <div className="bg-[#0E131F]/90 border border-slate-800/70 rounded-2xl p-12 text-center max-w-lg mx-auto mt-10">
+              <h3 className="text-sm font-semibold text-white">No Document Selected</h3>
               <p className="text-xs text-slate-400 mt-1">
-                Select a book from My Library to export its Markdown and ZIP packages.
+                Select a document from your library to save chapters as PDFs or export Markdown archives.
               </p>
             </div>
           )}

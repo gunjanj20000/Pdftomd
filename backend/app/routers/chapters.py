@@ -510,3 +510,11 @@ def reconvert_batch_chapters(
         res = reconvert_single_chapter(project_id, cid, custom_settings)
         results.append(res)
     return results
+
+
+@router.get("/{chapter_id}/pdf")
+def get_chapter_pdf_shortcut(project_id: str, chapter_id: str):
+    """Convenience shortcut to download a chapter as a standalone PDF."""
+    from app.routers.export import download_chapter_pdf
+    return download_chapter_pdf(project_id, chapter_id)
+

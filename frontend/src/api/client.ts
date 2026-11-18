@@ -325,6 +325,14 @@ export const api = {
     return `${API_BASE}/projects/${projectId}/export/chapter/${chapterId}`;
   },
 
+  getChapterPdfUrl(projectId: string, chapterId: string): string {
+    return `${API_BASE}/projects/${projectId}/export/chapter/${chapterId}/pdf`;
+  },
+
+  getChaptersPdfZipUrl(projectId: string): string {
+    return `${API_BASE}/projects/${projectId}/export/chapters-pdf-zip`;
+  },
+
   getAiRagZipUrl(projectId: string): string {
     return `${API_BASE}/projects/${projectId}/export/ai-rag-zip`;
   },

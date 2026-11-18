@@ -7,6 +7,8 @@ from fastapi.responses import FileResponse
 from app.database import get_db
 from app.services.export_service import (
     create_export_zip,
+    create_chapters_pdf_zip,
+    extract_chapter_pdf,
     generate_book_readme,
     generate_combined_markdown,
     generate_metadata_json,
@@ -131,6 +133,102 @@ def download_chapter_markdown(project_id: str, chapter_id: str):
         filename=path_obj.name,
         media_type="text/markdown",
     )
+
+
+@router.get("/chapter/{chapter_id}/pdf")
+def download_chapter_pdf(project_id: str, chapter_id: str):
+    """
+    Extracts and downloads an individual chapter as an authentic, high-quality PDF.
+    Does NOT require prior Markdown conversion.
+    """
+    conn = get_db()
+    proj = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
+    if not proj:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    ch = conn.execute(
+        "SELECT * FROM chapters WHERE id = ? AND project_id = ?", (chapter_id, project_id)
+    ).fetchone()
+    conn.close()
+
+    if not ch:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+
+    pdf_path = Path(proj["filepath"])
+    if not pdf_path.exists():
+        raise HTTPException(status_code=404, detail="Original PDF file not found on disk")
+
+    out_dir = Path(proj["output_dir"]) / "pdf_chapters"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    ch_num = ch["chapter_num"]
+    safe_title = "".join(c for c in ch["title"] if c.isalnum() or c in (" ", "-", "_")).strip()[:50] or f"Chapter_{ch_num}"
+    filename = f"{ch_num:02d}_{safe_title}.pdf"
+    chapter_pdf_path = out_dir / filename
+
+    try:
+        extract_chapter_pdf(
+            pdf_path=pdf_path,
+            start_page=ch["start_page"],
+            end_page=ch["end_page"],
+            output_path=chapter_pdf_path,
+            title=ch["title"],
+        )
+    except Exception as e:
+        logger.error(f"Error slicing chapter PDF: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate chapter PDF: {str(e)}")
+
+    return FileResponse(
+        path=str(chapter_pdf_path),
+        filename=filename,
+        media_type="application/pdf",
+    )
+
+
+@router.get("/chapters-pdf-zip")
+def download_chapters_pdf_zip(project_id: str):
+    """
+    Extracts all selected chapters (or all chapters) into separate PDF files
+    and serves them as a single convenient ZIP archive.
+    """
+    conn = get_db()
+    proj = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
+    if not proj:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    chapters = conn.execute(
+        "SELECT * FROM chapters WHERE project_id = ? AND is_selected = 1 ORDER BY chapter_num ASC",
+        (project_id,),
+    ).fetchall()
+
+    if not chapters:
+        chapters = conn.execute(
+            "SELECT * FROM chapters WHERE project_id = ? ORDER BY chapter_num ASC",
+            (project_id,),
+        ).fetchall()
+
+    conn.close()
+
+    if not chapters:
+        raise HTTPException(status_code=400, detail="No chapters found in project to export as PDF.")
+
+    out_dir = Path(proj["output_dir"])
+    ch_list = [dict(c) for c in chapters]
+
+    try:
+        zip_path = create_chapters_pdf_zip(dict(proj), ch_list, out_dir)
+    except Exception as e:
+        logger.error(f"Error creating PDF chapters zip: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF chapters ZIP: {str(e)}")
+
+    return FileResponse(
+        path=str(zip_path),
+        filename=zip_path.name,
+        media_type="application/zip",
+    )
+
 
 
 @router.get("/ai-rag-zip")

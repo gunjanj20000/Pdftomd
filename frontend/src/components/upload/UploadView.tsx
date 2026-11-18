@@ -3,9 +3,7 @@ import {
   UploadCloud,
   FileText,
   AlertTriangle,
-  CheckCircle2,
   Lock,
-  ArrowRight,
   BookOpen,
 } from 'lucide-react';
 import { Project } from '../../types';
@@ -69,17 +67,17 @@ export const UploadView: React.FC<UploadViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 max-w-4xl mx-auto">
       {/* If active project is set, show Document Inspector */}
       {activeProject ? (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400">Inspecting uploaded document:</span>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <span>Inspecting document structure:</span>
             <button
               onClick={() => onProjectReady(null as any)}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
+              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium cursor-pointer"
             >
-              + Upload Another PDF
+              + Upload Another Document
             </button>
           </div>
           <DocumentInspector
@@ -91,11 +89,11 @@ export const UploadView: React.FC<UploadViewProps> = ({
         </div>
       ) : (
         /* Upload Box */
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={onDrop}
-            className="border-2 border-dashed border-slate-700 hover:border-indigo-500/70 bg-[#111827]/80 rounded-2xl p-8 sm:p-14 text-center transition-all shadow-inner"
+            className="border border-dashed border-slate-800 hover:border-indigo-500/50 bg-[#0E131F]/90 rounded-2xl p-8 sm:p-12 text-center transition-all shadow-sm"
           >
             <input
               type="file"
@@ -109,36 +107,36 @@ export const UploadView: React.FC<UploadViewProps> = ({
               htmlFor="upload-file-input"
               className="cursor-pointer flex flex-col items-center justify-center"
             >
-              <div className="w-20 h-20 rounded-3xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-5 shadow-lg shadow-indigo-600/10">
-                <UploadCloud className="w-10 h-10" />
+              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4">
+                <UploadCloud className="w-6 h-6" />
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                Select or Drop PDF Book to Inspect
+              <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight">
+                Upload PDF Book or Document
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-lg leading-relaxed">
-                Works with technical manuals, medical textbooks, and multi-chapter books. Supports files up to 1 GB.
+              <p className="text-xs text-slate-400 mt-1 max-w-md leading-relaxed">
+                Extract chapter boundaries and save chapters as standalone PDFs or convert to Markdown.
               </p>
 
               {isUploading ? (
-                <div className="w-full max-w-md mt-6 space-y-2">
-                  <div className="flex justify-between text-xs text-slate-300 font-medium">
-                    <span>Uploading & verifying integrity...</span>
+                <div className="w-full max-w-xs mt-5 space-y-2">
+                  <div className="flex justify-between text-[11px] text-slate-400 font-mono">
+                    <span>Uploading...</span>
                     <span>{uploadProgress}%</span>
                   </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
                     <div
-                      className="bg-indigo-600 h-2 rounded-full transition-all duration-200"
+                      className="bg-indigo-600 h-1.5 rounded-full transition-all duration-200"
                       style={{ width: `${uploadProgress}%` }}
-                    ></div>
+                    />
                   </div>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => document.getElementById('upload-file-input')?.click()}
-                  className="mt-6 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+                  className="mt-5 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer"
                 >
-                  Browse PDF Files
+                  Select File
                 </button>
               )}
             </label>
@@ -146,39 +144,39 @@ export const UploadView: React.FC<UploadViewProps> = ({
 
           {/* Error Banner */}
           {errorMsg && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center space-x-3">
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center space-x-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* Feature highlights grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-            <div className="p-4 bg-[#111827] border border-slate-800 rounded-xl">
-              <h4 className="text-xs font-bold text-white flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-indigo-400" />
-                Intelligent Hierarchy
+          {/* Feature highlights */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 bg-[#0E131F]/90 border border-slate-800/70 rounded-xl">
+              <h4 className="text-xs font-medium text-white flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                Chapter Detection
               </h4>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Preserves book outlines, chapters, subchapters, and nested headers.
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Automated detection via bookmarks, TOC, or font headings.
               </p>
             </div>
-            <div className="p-4 bg-[#111827] border border-slate-800 rounded-xl">
-              <h4 className="text-xs font-bold text-white flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-400" />
-                Tables & Math
+            <div className="p-3.5 bg-[#0E131F]/90 border border-slate-800/70 rounded-xl">
+              <h4 className="text-xs font-medium text-white flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                Dual Export Modes
               </h4>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Converts complex tables to clean Markdown or HTML and retains equations.
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Save chapters as sliced PDFs or convert to clean Markdown.
               </p>
             </div>
-            <div className="p-4 bg-[#111827] border border-slate-800 rounded-xl">
-              <h4 className="text-xs font-bold text-white flex items-center gap-2">
-                <Lock className="w-4 h-4 text-violet-400" />
+            <div className="p-3.5 bg-[#0E131F]/90 border border-slate-800/70 rounded-xl">
+              <h4 className="text-xs font-medium text-white flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-violet-400" />
                 100% Offline & Private
               </h4>
-              <p className="text-[11px] text-slate-400 mt-1">
-                All document parsing runs strictly locally on your machine or private server.
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                All slicing and rendering executes locally on your system.
               </p>
             </div>
           </div>

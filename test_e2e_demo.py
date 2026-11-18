@@ -210,6 +210,32 @@ def run_demo():
         for item in z.namelist()[:8]:
             print(f"   • {item}")
 
+    # Step 13: Test Saving Chapters as Standalone Sliced PDFs
+    print("\n[Step 13] Testing Saving Chapters as Standalone PDFs (not as MD, but as PDF)...")
+    # Test downloading single chapter PDF
+    first_ch = chapters[0]
+    ch_pdf_res = client.get(f"/api/projects/{project_id}/export/chapter/{first_ch['id']}/pdf")
+    assert ch_pdf_res.status_code == 200
+    assert ch_pdf_res.headers["content-type"] == "application/pdf"
+    first_pdf_doc = pymupdf.open(stream=ch_pdf_res.content, filetype="pdf")
+    assert len(first_pdf_doc) == first_ch["page_count"]
+    print(f"✓ Sliced Chapter 1 PDF: {len(ch_pdf_res.content)} bytes, {len(first_pdf_doc)} pages (pp. {first_ch['start_page']}–{first_ch['end_page']})")
+    first_pdf_doc.close()
+
+    # Test downloading all chapters as PDF ZIP
+    all_pdf_zip_res = client.get(f"/api/projects/{project_id}/export/chapters-pdf-zip")
+    assert all_pdf_zip_res.status_code == 200
+    assert all_pdf_zip_res.headers["content-type"] == "application/zip"
+    pdf_zip_path = Path("/home/ubuntu/pdftomd/data/temp/demo_chapters_pdf.zip")
+    with open(pdf_zip_path, "wb") as f:
+        f.write(all_pdf_zip_res.content)
+    with zipfile.ZipFile(pdf_zip_path, "r") as z:
+        pdf_files = [f for f in z.namelist() if f.endswith(".pdf")]
+        print(f"✓ Downloaded All Chapters as PDF ZIP: {len(all_pdf_zip_res.content)} bytes ({len(pdf_files)} PDF chapters):")
+        for f in pdf_files:
+            print(f"   • {f}")
+        assert len(pdf_files) == len(chapters)
+
     print("\n" + "=" * 65)
     print("ALL TESTS PASSED! PDF BOOK TO MARKDOWN STUDIO IS FULLY OPERATIONAL.")
     print("=" * 65)

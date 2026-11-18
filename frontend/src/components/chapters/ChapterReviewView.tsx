@@ -3,7 +3,6 @@ import {
   CheckSquare,
   Square,
   Search,
-  ArrowUpDown,
   Scissors,
   Merge,
   Trash2,
@@ -16,8 +15,9 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
-  Sparkles,
+  FileDown,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 import { Chapter, Project } from '../../types';
 import { api } from '../../api/client';
@@ -42,7 +42,7 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'num' | 'title' | 'pages'>('num');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  
+
   // Selected chapter for side-by-side preview
   const [previewChapter, setPreviewChapter] = useState<Chapter | null>(
     chapters.length > 0 ? chapters[0] : null
@@ -61,7 +61,7 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
   const [editStart, setEditStart] = useState<number>(1);
   const [editEnd, setEditEnd] = useState<number>(1);
 
-  // Selected for batch merge/delete
+  // Selected for batch operations
   const selectedChapters = chapters.filter((c) => c.is_selected);
   const [convertingRowId, setConvertingRowId] = useState<string | null>(null);
   const [isStartingConversion, setIsStartingConversion] = useState<boolean>(false);
@@ -143,7 +143,11 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
     }
   };
 
-  const handleSplitConfirm = async (splitPage: number, firstTitle?: string, secondTitle?: string) => {
+  const handleSplitConfirm = async (
+    splitPage: number,
+    firstTitle?: string,
+    secondTitle?: string
+  ) => {
     if (!splitTarget) return;
     try {
       await api.splitChapter(project.id, splitTarget.id, splitPage, firstTitle, secondTitle);
@@ -204,92 +208,114 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
     });
 
   return (
-    <div className="space-y-6">
-      {/* Top action header */}
-      <div className="bg-[#111827] border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* Minimalist Top Control Bar */}
+      <div className="bg-[#0E131F]/90 border border-slate-800/70 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm backdrop-blur-sm">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-400" />
-            Chapter Review: {project.title}
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {chapters.length} chapters identified. Verify page ranges, rename, merge or split before conversion.
+          <div className="flex items-center space-x-2">
+            <BookOpen className="w-4 h-4 text-indigo-400" />
+            <h2 className="text-sm sm:text-base font-semibold text-white tracking-tight">
+              {project.title}
+            </h2>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            {chapters.length} chapters identified • {project.page_count} total pages • Save chapters as separate PDFs or convert to Markdown.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={onRedetect}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer"
+        {/* Primary Action Buttons */}
+        <div className="flex items-center flex-wrap gap-2 shrink-0">
+          {/* Option to Save All Chapters as PDF (ZIP) */}
+          <a
+            href={api.getChaptersPdfZipUrl(project.id)}
+            download
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900/90 hover:bg-slate-800 text-indigo-300 border border-indigo-500/30 hover:border-indigo-500/50 transition-all shadow-sm cursor-pointer"
+            title="Slice and download all chapters as separate authentic PDF files"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Re-detect</span>
-          </button>
-          <button
-            onClick={handleAddManualChapter}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Chapter</span>
-          </button>
+            <FileDown className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Save Chapters as PDF</span>
+          </a>
+
+          {/* Convert to Markdown */}
           <button
             onClick={handleStartConversionClick}
             disabled={selectedChapters.length === 0 || isStartingConversion}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 text-white shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white shadow-sm transition-all cursor-pointer"
           >
-            <Play className={`w-4 h-4 fill-white ${isStartingConversion ? 'animate-pulse' : ''}`} />
-            <span>{isStartingConversion ? 'Starting...' : `Convert ${selectedChapters.length} Chapters`}</span>
+            <Play className={`w-3.5 h-3.5 fill-white ${isStartingConversion ? 'animate-pulse' : ''}`} />
+            <span>{isStartingConversion ? 'Converting...' : `Convert to MD (${selectedChapters.length})`}</span>
+          </button>
+
+          {/* Secondary Tools */}
+          <button
+            onClick={onRedetect}
+            className="inline-flex items-center space-x-1 px-3 py-2 rounded-xl text-xs font-medium bg-slate-900/60 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors cursor-pointer"
+            title="Re-run chapter detection"
+          >
+            <RefreshCw className="w-3 h-3 text-slate-400" />
+            <span>Re-detect</span>
+          </button>
+
+          <button
+            onClick={handleAddManualChapter}
+            className="inline-flex items-center space-x-1 px-3 py-2 rounded-xl text-xs font-medium bg-slate-900/60 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors cursor-pointer"
+            title="Add a manual chapter boundary"
+          >
+            <Plus className="w-3 h-3 text-slate-400" />
+            <span>Add Chapter</span>
           </button>
         </div>
       </div>
 
-      {/* Main Split Grid: Table on Left, PDF Preview on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Chapters Table (7 cols on lg, full on sm) */}
-        <div className="lg:col-span-7 bg-[#111827] border border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-          {/* Table Toolbar */}
-          <div className="p-3 sm:p-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      {/* Main Grid: Chapter List on Left, PDF Preview on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Chapters Table */}
+        <div className="lg:col-span-7 bg-[#0E131F]/90 border border-slate-800/70 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+          {/* Minimalist Toolbar */}
+          <div className="px-4 py-3 border-b border-slate-800/60 flex flex-wrap items-center justify-between gap-3 bg-slate-900/30">
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => handleSelectAll(selectedChapters.length !== chapters.length)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 flex items-center gap-1.5 text-xs font-medium"
+                className="p-1 text-slate-400 hover:text-white rounded-md flex items-center gap-1.5 text-xs font-medium"
               >
                 {selectedChapters.length === chapters.length ? (
-                  <CheckSquare className="w-4 h-4 text-indigo-400" />
+                  <CheckSquare className="w-3.5 h-3.5 text-indigo-400" />
                 ) : (
-                  <Square className="w-4 h-4" />
+                  <Square className="w-3.5 h-3.5" />
                 )}
-                <span>{selectedChapters.length}/{chapters.length}</span>
+                <span>
+                  {selectedChapters.length}/{chapters.length} Selected
+                </span>
               </button>
 
               {selectedChapters.length >= 2 && (
                 <button
                   onClick={() => setShowMergeModal(true)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/20 flex items-center gap-1"
+                  className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/20 flex items-center gap-1"
                 >
-                  <Merge className="w-3.5 h-3.5" />
+                  <Merge className="w-3 h-3" />
                   <span>Merge ({selectedChapters.length})</span>
                 </button>
               )}
             </div>
 
-            {/* Search Input */}
+            {/* Quick Search */}
             <div className="relative flex-1 max-w-xs">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
-                placeholder="Search chapters..."
+                placeholder="Filter chapters..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950/60 border border-slate-800 rounded-lg pl-8 pr-3 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/60"
               />
             </div>
           </div>
 
-          {/* Table Content */}
-          <div className="overflow-x-auto max-h-[620px] overflow-y-auto divide-y divide-slate-800/80">
+          {/* Chapters Rows */}
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto divide-y divide-slate-800/50">
             {filteredChapters.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400">
+              <div className="p-8 text-center text-xs text-slate-500">
                 No chapters found. Click "Add Chapter" or "Re-detect".
               </div>
             ) : (
@@ -300,15 +326,17 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
                 return (
                   <div
                     key={c.id}
-                    className={`p-3.5 transition-colors flex items-center justify-between gap-3 ${
-                      isCurrentPreview ? 'bg-indigo-950/20' : 'hover:bg-slate-800/40'
+                    className={`p-3 transition-colors flex items-center justify-between gap-3 ${
+                      isCurrentPreview
+                        ? 'bg-indigo-950/20 border-l-2 border-indigo-500'
+                        : 'hover:bg-slate-800/30'
                     }`}
                   >
-                    {/* Left: Checkbox & Info */}
-                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                    {/* Left: Checkbox & Chapter Details */}
+                    <div className="flex items-center space-x-2.5 min-w-0 flex-1">
                       <button
                         onClick={() => handleToggleSelect(c)}
-                        className="text-slate-400 hover:text-white shrink-0"
+                        className="text-slate-500 hover:text-white shrink-0"
                       >
                         {c.is_selected ? (
                           <CheckSquare className="w-4 h-4 text-indigo-400" />
@@ -317,34 +345,34 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
                         )}
                       </button>
 
-                      <span className="text-xs font-mono font-bold text-slate-500 shrink-0 w-6">
-                        {c.chapter_num}
+                      <span className="text-[11px] font-mono text-slate-500 shrink-0 w-6">
+                        {String(c.chapter_num).padStart(2, '0')}
                       </span>
 
                       {isEditing ? (
-                        <div className="flex items-center gap-2 flex-1">
+                        <div className="flex items-center gap-1.5 flex-1">
                           <input
                             type="text"
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
-                            className="bg-slate-900 border border-slate-700 text-xs text-white rounded px-2 py-1 flex-1"
+                            className="bg-slate-950 border border-slate-700 text-xs text-white rounded px-2 py-1 flex-1"
                           />
                           <input
                             type="number"
                             value={editStart}
                             onChange={(e) => setEditStart(parseInt(e.target.value) || 1)}
-                            className="bg-slate-900 border border-slate-700 text-xs text-white rounded w-16 px-1.5 py-1 text-center"
+                            className="bg-slate-950 border border-slate-700 text-xs text-white rounded w-14 px-1 py-1 text-center font-mono"
                           />
-                          <span className="text-slate-500">-</span>
+                          <span className="text-slate-600">-</span>
                           <input
                             type="number"
                             value={editEnd}
                             onChange={(e) => setEditEnd(parseInt(e.target.value) || 1)}
-                            className="bg-slate-900 border border-slate-700 text-xs text-white rounded w-16 px-1.5 py-1 text-center"
+                            className="bg-slate-950 border border-slate-700 text-xs text-white rounded w-14 px-1 py-1 text-center font-mono"
                           />
                           <button
                             onClick={() => saveInlineEdit(c.id)}
-                            className="p-1 rounded bg-emerald-600 text-white hover:bg-emerald-500"
+                            className="p-1 rounded bg-indigo-600 text-white hover:bg-indigo-500"
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
@@ -354,57 +382,87 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
                           className="min-w-0 flex-1 cursor-pointer"
                           onClick={() => selectForPreview(c)}
                         >
-                          <p className="text-xs font-semibold text-slate-200 truncate hover:text-indigo-400 transition-colors">
-                            {c.title}
-                          </p>
-                          <p className="text-[11px] text-slate-500 mt-0.5">
-                            Pages {c.start_page}–{c.end_page} ({c.page_count} pp.) • Method: <span className="capitalize">{c.detection_method}</span>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-medium text-slate-200 truncate hover:text-indigo-300 transition-colors">
+                              {c.title}
+                            </p>
+                            {c.status === 'completed' && (
+                              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-mono text-emerald-400 bg-emerald-500/10">
+                                MD
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2 font-mono">
+                            <span>pp. {c.start_page}–{c.end_page}</span>
+                            <span>•</span>
+                            <span>{c.page_count} pages</span>
+                            <span className="text-slate-600 capitalize">({c.detection_method})</span>
                           </p>
                         </div>
                       )}
                     </div>
 
-                    {/* Right: Action Buttons */}
+                    {/* Right: Actions */}
                     {!isEditing && (
                       <div className="flex items-center space-x-1 shrink-0">
+                        {/* Direct Save Chapter as PDF */}
+                        <a
+                          href={api.getChapterPdfUrl(project.id, c.id)}
+                          download
+                          className="inline-flex items-center space-x-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 hover:border-indigo-500/40 transition-colors"
+                          title={`Save Chapter ${c.chapter_num} as PDF (${c.page_count} pp.)`}
+                        >
+                          <FileDown className="w-3 h-3 text-indigo-400" />
+                          <span>PDF</span>
+                        </a>
+
+                        {/* Convert to Markdown */}
                         <button
                           onClick={() => handleConvertSingleRow(c)}
                           disabled={convertingRowId === c.id}
-                          className="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 disabled:opacity-50"
-                          title="Convert Only This Chapter"
+                          className="p-1.5 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50"
+                          title="Convert Chapter to Markdown"
                         >
                           {convertingRowId === c.id ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" />
                           ) : c.status === 'completed' ? (
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                           ) : (
-                            <Play className="w-3.5 h-3.5 text-indigo-400" />
+                            <Play className="w-3.5 h-3.5 text-slate-400 hover:text-indigo-400" />
                           )}
                         </button>
+
+                        {/* Preview */}
                         <button
                           onClick={() => selectForPreview(c)}
-                          className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-slate-800"
-                          title="Preview Page"
+                          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                          title="Preview First Page"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
+
+                        {/* Edit Boundaries */}
                         <button
                           onClick={() => startInlineEdit(c)}
-                          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                          title="Edit Boundaries"
+                          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                          title="Edit Title & Boundaries"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
+
+                        {/* Split */}
                         <button
                           onClick={() => setSplitTarget(c)}
-                          className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800"
+                          className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
                           title="Split Chapter"
                         >
                           <Scissors className="w-3.5 h-3.5" />
                         </button>
+
+                        {/* Delete */}
                         <button
                           onClick={() => handleDelete(c.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800"
+                          className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
                           title="Delete Chapter"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -418,49 +476,64 @@ export const ChapterReviewView: React.FC<ChapterReviewViewProps> = ({
           </div>
         </div>
 
-        {/* Desktop Side-by-Side PDF Page Previewer (5 cols on lg) */}
-        <div className="lg:col-span-5 bg-[#111827] border border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col h-[680px]">
-          {/* Header with Page Stepper */}
-          <div className="p-3.5 border-b border-slate-800 flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 block">
-                {previewChapter ? `Ch. ${previewChapter.chapter_num} Start Page` : 'PDF Preview'}
+        {/* Minimalist Side-by-Side PDF Page Previewer */}
+        <div className="lg:col-span-5 bg-[#0E131F]/90 border border-slate-800/70 rounded-2xl overflow-hidden shadow-sm flex flex-col h-[650px]">
+          {/* Header */}
+          <div className="p-3 border-b border-slate-800/60 flex items-center justify-between bg-slate-900/30">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400 block font-mono">
+                {previewChapter ? `Chapter ${previewChapter.chapter_num}` : 'Preview'}
               </span>
-              <p className="text-xs font-semibold text-white truncate max-w-[200px]">
-                {previewChapter ? previewChapter.title : 'No chapter selected'}
+              <p className="text-xs font-medium text-white truncate max-w-[200px]">
+                {previewChapter ? previewChapter.title : 'Select a chapter'}
               </p>
             </div>
 
-            <div className="flex items-center space-x-1.5">
-              <button
-                disabled={previewPage <= 1}
-                onClick={() => setPreviewPage(p => Math.max(1, p - 1))}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white"
-                title="Previous Page"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-xs font-mono text-slate-300 px-2 font-medium">
-                {previewPage} / {project.page_count}
-              </span>
-              <button
-                disabled={previewPage >= project.page_count}
-                onClick={() => setPreviewPage(p => Math.min(project.page_count, p + 1))}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white"
-                title="Next Page"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+            <div className="flex items-center space-x-2 shrink-0">
+              {previewChapter && (
+                <a
+                  href={api.getChapterPdfUrl(project.id, previewChapter.id)}
+                  download
+                  className="inline-flex items-center space-x-1 px-2 py-1 text-[10px] font-medium rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20"
+                  title="Save this chapter as PDF"
+                >
+                  <FileDown className="w-3 h-3 text-indigo-400" />
+                  <span>Save PDF</span>
+                </a>
+              )}
+
+              {/* Stepper */}
+              <div className="flex items-center space-x-1 bg-slate-950 border border-slate-800 rounded-lg p-0.5">
+                <button
+                  disabled={previewPage <= 1}
+                  onClick={() => setPreviewPage((p) => Math.max(1, p - 1))}
+                  className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[11px] font-mono text-slate-300 px-1.5">
+                  {previewPage} / {project.page_count}
+                </span>
+                <button
+                  disabled={previewPage >= project.page_count}
+                  onClick={() => setPreviewPage((p) => Math.min(project.page_count, p + 1))}
+                  className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30"
+                  title="Next Page"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Rendered Preview Page Image */}
-          <div className="flex-1 bg-[#0B0F19] overflow-auto flex items-center justify-center p-3">
+          {/* Rendered Preview Image */}
+          <div className="flex-1 bg-[#070A10] overflow-auto flex items-center justify-center p-3">
             <img
               key={`${project.id}_${previewPage}`}
               src={api.getPagePreviewUrl(project.id, previewPage, 130)}
               alt={`Page ${previewPage}`}
-              className="max-h-[590px] w-auto object-contain rounded shadow-xl border border-slate-800"
+              className="max-h-[560px] w-auto object-contain rounded-lg shadow-lg border border-slate-800/80"
             />
           </div>
         </div>
