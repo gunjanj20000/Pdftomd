@@ -59,9 +59,14 @@ def test_upload_and_workflow(tmp_path):
     job_id = job["id"]
     assert job["status"] in ("queued", "running")
 
-    # 6. Verify job status
-    job_check = client.get(f"/api/jobs/{job_id}")
-    assert job_check.status_code == 200
+    # 6. Verify job status (wait briefly for completion so daemon thread exits cleanly)
+    import time
+    for _ in range(50):
+        job_check = client.get(f"/api/jobs/{job_id}")
+        assert job_check.status_code == 200
+        if job_check.json()["status"] in ("completed", "failed"):
+            break
+        time.sleep(0.1)
 
     # 7. Check stats endpoint
     stats_res = client.get("/api/stats")
